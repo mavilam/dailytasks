@@ -1,14 +1,31 @@
-name: Build Vue
-on: [push]
+name: Deploy to github pages
+on:
+  push:
+    branches:
+      - main
 jobs:
-  build_vue:
+  gh-pages-deploy:
+    name: Deploying to gh-pages
     runs-on: ubuntu-latest
-    name: Build Vue
     steps:
-    - uses: actions/checkout@v2
-    - id: Build-Vue
-      uses: xRealNeon/VuePagesAction@1.0.1
-      with:
-        username: 'mavilam'
-        reponame: 'dailytasks'
-        token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Setup Node.js for use with actions
+        uses: actions/setup-node@v2
+        with:
+          version:  16.x
+      - name: Checkout branch
+        uses: actions/checkout@v2
+      - name: Clean install dependencies
+        run: npm ci
+      - name: Set git config
+        run: |
+          git config user.name "$(git log -n 1 --pretty=format:%an)"
+          git config user.email "$(git log -n 1 --pretty=format:%ae)"
+      - name: Change branch
+        run: git checkout --orphan gh-pages
+      - name: Build
+        run: npm run build
+      - name: Commit and push
+        run: | 
+          git --work-tree dist add --all
+          git --work-tree dist commit -m 'Deploy to gh-pages'
+          git push origin HEAD:gh-pages --force
